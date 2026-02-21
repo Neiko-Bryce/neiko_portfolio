@@ -1,29 +1,6 @@
 # ============================================================
-# Stage 1: Build frontend assets (Vite + React + Tailwind)
-# ============================================================
-FROM node:20-alpine AS frontend
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY vite.config.ts tsconfig.json components.json ./
-COPY resources/ ./resources/
-
-# Copy PHP files needed by laravel-vite-plugin for manifest
-COPY artisan ./
-COPY bootstrap/ ./bootstrap/
-COPY config/ ./config/
-COPY routes/ ./routes/
-COPY app/ ./app/
-COPY public/ ./public/
-
-RUN npm run build
-
-
-# ============================================================
-# Stage 2: PHP application with Apache
+# Single-stage build: PHP 8.3 + Apache + Node.js 20
+# (wayfinder plugin requires PHP during Vite build)
 # ============================================================
 FROM php:8.3-apache
 
@@ -44,6 +21,11 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js 20 (needed for Vite build)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
@@ -61,7 +43,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer files and install PHP dependencies
+# Copy composer files and install PHP dependencies first (for caching)
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
@@ -71,8 +53,12 @@ COPY . .
 # Re-run composer scripts (post-autoload-dump etc.)
 RUN composer dump-autoload --optimize
 
-# Copy built frontend assets from stage 1
-COPY --from=frontend /app/public/build ./public/build
+# Install Node dependencies and build frontend assets
+# (wayfinder plugin needs PHP + artisan available during build)
+RUN npm ci && npm run build
+
+# Clean up Node.js artifacts to keep image smaller
+RUN rm -rf node_modules
 
 # Create storage directories and set permissions
 RUN mkdir -p storage/framework/{cache,sessions,views,testing} \
