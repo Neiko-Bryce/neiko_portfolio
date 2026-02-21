@@ -1,0 +1,8 @@
+resources/js/components/user-menu-content.tsx(12,10): error TS2305: Module '"@/routes"' has no exported member 'logout'.
+resources/js/layouts/auth/auth-card-layout.tsx(11,10): error TS2305: Module '"@/routes"' has no exported member 'home'.
+resources/js/layouts/auth/auth-simple-layout.tsx(4,10): error TS2305: Module '"@/routes"' has no exported member 'home'.
+resources/js/layouts/auth/auth-split-layout.tsx(4,10): error TS2305: Module '"@/routes"' has no exported member 'home'.
+resources/js/pages/auth/forgot-password.tsx(10,10): error TS2305: Module '"@/routes"' has no exported member 'login'.
+resources/js/pages/auth/login.tsx(10,10): error TS2305: Module '"@/routes"' has no exported member 'register'.
+resources/js/pages/auth/register.tsx(9,10): error TS2305: Module '"@/routes"' has no exported member 'login'.
+resources/js/pages/auth/verify-email.tsx(7,10): error TS2305: Module '"@/routes"' has no exported member 'logout'.

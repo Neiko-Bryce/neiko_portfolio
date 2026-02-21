@@ -1,769 +1,498 @@
-import { useState, useEffect, useRef } from "react";
+import { Head } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 
-/* ─── STYLES ─── */
-const FONT_URL =
-  "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap";
+/* ─── Types ─── */
+interface Profile {
+  name: string | null; headline: string | null; location: string | null;
+  about: string | null; avatar_url: string | null; email: string | null;
+  schedule_call_url: string | null; blog_url: string | null;
+}
+interface Skill { id: number; category: string; name: string }
+interface Project { id: number; title: string; description: string | null; url: string | null; is_recent: boolean }
+interface Experience { id: number; role: string; company: string; year_start: string | null; year_end: string | null; is_current: boolean }
+interface Certification { id: number; name: string; issuer: string | null }
+interface Recommendation { id: number; quote: string; author_name: string; author_role: string | null }
+interface GalleryItem { id: number; image_url: string; caption: string | null }
+interface Membership { id: number; name: string; url: string | null }
+interface SocialLink { id: number; platform: string; url: string }
 
-const styles = `
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  .nl-root {
-    --bg:     #090909;
-    --bg2:    #101010;
-    --bg3:    #151515;
-    --border: #202020;
-    --muted:  #333;
-    --dim:    #555;
-    --mid:    #888;
-    --light:  #bbb;
-    --white:  #ededed;
-    background: var(--bg);
-    color: var(--white);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-    min-height: 100vh;
-  }
-
-  /* ── NAV ── */
-  .nl-nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 4rem; height: 60px;
-    background: rgba(9,9,9,0.92);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid var(--border);
-  }
-  .nl-logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem; letter-spacing: .12em;
-    color: var(--white); text-decoration: none;
-    cursor: pointer;
-  }
-  .nl-logo span { color: var(--dim); }
-  .nl-nav-links { display: flex; align-items: center; gap: 2.25rem; }
-  .nl-nav-a {
-    font-size: .74rem; font-weight: 400; color: var(--dim);
-    background: none; border: none; cursor: pointer;
-    letter-spacing: .08em; text-transform: uppercase;
-    transition: color .2s; font-family: 'DM Sans', sans-serif;
-    padding: 0;
-  }
-  .nl-nav-a:hover { color: var(--white); }
-  .nl-nav-cta {
-    font-size: .74rem; font-weight: 500; letter-spacing: .06em;
-    color: var(--bg); background: var(--white);
-    padding: .5rem 1.3rem; border-radius: 3px; border: none;
-    cursor: pointer; transition: opacity .2s;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .nl-nav-cta:hover { opacity: .78; }
-
-  /* ── HERO ── */
-  .nl-hero {
-    min-height: 100vh;
-    display: grid; grid-template-columns: 1fr 1fr;
-    align-items: center; gap: 4rem;
-    padding: 60px 4rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .nl-hero-left { display: flex; flex-direction: column; gap: 1.6rem; }
-  .nl-badge {
-    display: inline-flex; align-items: center; gap: .6rem;
-    font-family: 'DM Mono', monospace; font-size: .68rem; color: var(--mid);
-    border: 1px solid var(--border); background: var(--bg2);
-    padding: .38rem 1rem; border-radius: 999px; width: fit-content;
-  }
-  .nl-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #4ade80; box-shadow: 0 0 6px #4ade80;
-    flex-shrink: 0;
-    animation: nlBlink 2.5s ease infinite;
-  }
-  @keyframes nlBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-  .nl-h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(4rem, 7.5vw, 8rem);
-    line-height: .91; letter-spacing: .03em; color: var(--white);
-  }
-  .nl-h1 em { color: var(--dim); font-style: normal; }
-  .nl-hero-sub {
-    font-size: .96rem; color: var(--mid);
-    line-height: 1.78; max-width: 400px;
-  }
-  .nl-hero-btns { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .4rem; }
-
-  .nl-btn-w {
-    font-size: .83rem; font-weight: 500; letter-spacing: .03em;
-    color: var(--bg); background: var(--white);
-    padding: .88rem 2.1rem; border-radius: 4px; border: none;
-    cursor: pointer; transition: opacity .2s;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .nl-btn-w:hover { opacity: .78; }
-  .nl-btn-o {
-    font-size: .83rem; font-weight: 400; letter-spacing: .03em;
-    color: var(--light); background: transparent;
-    border: 1px solid var(--border);
-    padding: .88rem 2.1rem; border-radius: 4px;
-    cursor: pointer; transition: border-color .2s, color .2s;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .nl-btn-o:hover { border-color: var(--mid); color: var(--white); }
-
-  /* Hero visual */
-  .nl-hero-right { display: flex; align-items: center; justify-content: center; }
-  .nl-hero-card {
-    width: 100%; max-width: 400px; aspect-ratio: 3/4;
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 16px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    position: relative; overflow: hidden;
-    gap: 1rem;
-  }
-  .nl-hero-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 50% 10%, rgba(255,255,255,.045) 0%, transparent 65%);
-  }
-  .nl-hero-card::after {
-    content: '';
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 50%; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--muted), transparent);
-  }
-  .nl-hero-chip {
-    position: absolute; top: 1.1rem; right: 1.1rem;
-    font-family: 'DM Mono', monospace; font-size: .58rem; color: var(--dim);
-    border: 1px solid var(--border); background: var(--bg);
-    padding: .26rem .6rem; border-radius: 3px; letter-spacing: .08em;
-  }
-  .nl-hero-glyph {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 9rem; color: var(--muted); letter-spacing: .06em;
-    line-height: 1; position: relative; z-index: 1;
-  }
-  .nl-hero-device-label {
-    font-family: 'DM Mono', monospace; font-size: .6rem;
-    color: var(--dim); letter-spacing: .16em; text-transform: uppercase;
-    position: relative; z-index: 1;
-  }
-  .nl-hero-bar {
-    position: absolute; bottom: 1.5rem; left: 1.5rem; right: 1.5rem;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .nl-hero-bar-tag {
-    font-family: 'DM Mono', monospace; font-size: .58rem; color: var(--muted);
-    letter-spacing: .08em;
-  }
-
-  /* ── TRUST MARQUEE ── */
-  .nl-trust {
-    display: flex; align-items: center; gap: 2rem;
-    padding: 2rem 4rem; border-bottom: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .nl-trust-label {
-    font-family: 'DM Mono', monospace; font-size: .63rem;
-    color: var(--dim); letter-spacing: .1em; text-transform: uppercase;
-    white-space: nowrap; flex-shrink: 0;
-  }
-  .nl-trust-rule { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
-  .nl-marquee-clip { overflow: hidden; flex: 1; }
-  .nl-marquee {
-    display: flex; gap: 3rem; width: max-content;
-    animation: nlMarquee 28s linear infinite;
-  }
-  @keyframes nlMarquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-  .nl-brand {
-    font-family: 'Bebas Neue', sans-serif; font-size: 1rem;
-    color: var(--muted); letter-spacing: .12em; flex-shrink: 0;
-  }
-
-  /* ── SECTION ── */
-  .nl-section { padding: 6rem 4rem; border-bottom: 1px solid var(--border); }
-  .nl-eyebrow {
-    font-family: 'DM Mono', monospace; font-size: .63rem;
-    color: var(--dim); letter-spacing: .15em; text-transform: uppercase;
-    margin-bottom: .65rem;
-  }
-  .nl-sh {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2.4rem, 5vw, 4.5rem);
-    line-height: .93; letter-spacing: .02em;
-    color: var(--white); margin-bottom: 1.1rem;
-  }
-  .nl-sp {
-    font-size: .93rem; color: var(--mid);
-    line-height: 1.78; max-width: 500px;
-  }
-  .nl-shead { margin-bottom: 3.5rem; }
-
-  /* ── BENTO ── */
-  .nl-bento {
-    display: grid; grid-template-columns: repeat(3,1fr);
-    gap: 1px; background: var(--border);
-    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-  }
-  .nl-bc {
-    background: var(--bg2); padding: 2.25rem 2rem;
-    display: flex; flex-direction: column; gap: .7rem;
-    transition: background .25s;
-  }
-  .nl-bc:hover { background: var(--bg3); }
-  .nl-bc.w2 { grid-column: span 2; }
-  .nl-bc-icon {
-    width: 42px; height: 42px; border: 1px solid var(--border);
-    border-radius: 8px; background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; margin-bottom: .2rem;
-  }
-  .nl-bc-title { font-size: .97rem; font-weight: 500; color: var(--white); }
-  .nl-bc-text { font-size: .81rem; color: var(--dim); line-height: 1.72; }
-  .nl-bc-stat {
-    font-family: 'Bebas Neue', sans-serif; font-size: 2.8rem;
-    color: var(--white); letter-spacing: .02em; margin-top: auto; padding-top: 1rem;
-  }
-  .nl-bc-stat small {
-    font-family: 'DM Mono', monospace; font-size: .78rem; color: var(--dim);
-  }
-
-  /* ── HOW ── */
-  .nl-how {
-    display: grid; grid-template-columns: repeat(3,1fr);
-    gap: 1px; background: var(--border);
-    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-  }
-  .nl-step {
-    background: var(--bg2); padding: 2.25rem 2rem;
-    display: flex; flex-direction: column; gap: .9rem;
-    transition: background .25s;
-  }
-  .nl-step:hover { background: var(--bg3); }
-  .nl-step-num {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'DM Mono', monospace; font-size: .62rem; color: var(--dim);
-  }
-  .nl-step-title { font-size: 1rem; font-weight: 500; color: var(--white); }
-  .nl-step-text { font-size: .81rem; color: var(--dim); line-height: 1.72; }
-
-  /* ── PRICING ── */
-  .nl-plans { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
-  .nl-plan {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 2rem 1.75rem;
-    display: flex; flex-direction: column; gap: 1rem;
-    position: relative; transition: border-color .25s;
-  }
-  .nl-plan:hover { border-color: var(--muted); }
-  .nl-plan.hot { border-color: #444; background: var(--bg3); }
-  .nl-hot-pill {
-    position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-    background: var(--white); color: var(--bg);
-    font-family: 'DM Mono', monospace; font-size: .59rem; font-weight: 500;
-    padding: .22rem .8rem; border-radius: 99px;
-    letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
-  }
-  .nl-tier {
-    font-family: 'DM Mono', monospace; font-size: .63rem;
-    color: var(--dim); letter-spacing: .1em; text-transform: uppercase;
-  }
-  .nl-price {
-    font-family: 'Bebas Neue', sans-serif; font-size: 2.9rem;
-    color: var(--white); letter-spacing: .02em; line-height: 1;
-  }
-  .nl-price sub {
-    font-family: 'DM Sans', sans-serif; font-size: .8rem;
-    color: var(--dim); font-weight: 300;
-  }
-  .nl-plan-desc { font-size: .8rem; color: var(--dim); line-height: 1.62; }
-  .nl-plan-hr { border: none; border-top: 1px solid var(--border); }
-  .nl-plan-btn-w {
-    display: block; text-align: center; padding: .72rem;
-    border-radius: 4px; border: none; cursor: pointer;
-    font-size: .8rem; font-weight: 500; letter-spacing: .04em;
-    color: var(--bg); background: var(--white);
-    font-family: 'DM Sans', sans-serif; transition: opacity .2s;
-  }
-  .nl-plan-btn-w:hover { opacity: .8; }
-  .nl-plan-btn-o {
-    display: block; text-align: center; padding: .72rem;
-    border-radius: 4px; border: 1px solid var(--border); cursor: pointer;
-    font-size: .8rem; font-weight: 400;
-    color: var(--light); background: transparent;
-    font-family: 'DM Sans', sans-serif; transition: border-color .2s, color .2s;
-  }
-  .nl-plan-btn-o:hover { border-color: var(--mid); color: var(--white); }
-  .nl-feats { display: flex; flex-direction: column; gap: .5rem; margin-top: .4rem; }
-  .nl-feat {
-    display: flex; align-items: flex-start; gap: .55rem;
-    font-size: .78rem; color: var(--mid); line-height: 1.45;
-  }
-  .nl-feat::before { content: '—'; color: var(--muted); flex-shrink: 0; }
-
-  /* ── TESTIMONIALS ── */
-  .nl-testis { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
-  .nl-testi {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 1.75rem;
-    display: flex; flex-direction: column; gap: 1rem;
-    transition: border-color .25s;
-  }
-  .nl-testi:hover { border-color: var(--muted); }
-  .nl-stars { font-size: .7rem; letter-spacing: .08em; }
-  .nl-testi-q { font-size: .86rem; color: var(--mid); line-height: 1.74; flex: 1; }
-  .nl-author { display: flex; align-items: center; gap: .8rem; margin-top: auto; }
-  .nl-ava {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: var(--muted); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'DM Mono', monospace; font-size: .64rem; color: var(--dim);
-    flex-shrink: 0;
-  }
-  .nl-aname { font-size: .8rem; font-weight: 500; color: var(--white); }
-  .nl-arole { font-size: .7rem; color: var(--dim); margin-top: .07rem; }
-
-  /* ── FAQ ── */
-  .nl-faq-list { max-width: 720px; }
-  .nl-faq-item { border-top: 1px solid var(--border); }
-  .nl-faq-item:last-child { border-bottom: 1px solid var(--border); }
-  .nl-faq-q {
-    width: 100%; display: flex; justify-content: space-between; align-items: center;
-    padding: 1.3rem 0; background: none; border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 400;
-    color: var(--white); text-align: left; gap: 1.5rem; transition: color .2s;
-  }
-  .nl-faq-q:hover { color: var(--light); }
-  .nl-faq-ico {
-    width: 22px; height: 22px; flex-shrink: 0;
-    border: 1px solid var(--border); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: .85rem; color: var(--dim);
-    transition: transform .3s ease, border-color .2s;
-  }
-  .nl-faq-item.open .nl-faq-ico { transform: rotate(45deg); border-color: var(--mid); }
-  .nl-faq-a {
-    font-size: .86rem; color: var(--dim); line-height: 1.76;
-    max-height: 0; overflow: hidden;
-    transition: max-height .36s ease, padding-bottom .3s ease;
-  }
-  .nl-faq-item.open .nl-faq-a { max-height: 220px; padding-bottom: 1.3rem; }
-
-  /* ── CTA ── */
-  .nl-cta-wrap {
-    padding: 6rem 4rem; border-bottom: 1px solid var(--border);
-    display: flex; justify-content: center;
-  }
-  .nl-cta-box {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 18px; padding: 5rem 3rem;
-    text-align: center; max-width: 700px; width: 100%;
-    position: relative; overflow: hidden;
-  }
-  .nl-cta-box::before {
-    content: '';
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 50%; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--muted), transparent);
-  }
-  .nl-cta-h {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2.5rem, 5vw, 4.8rem);
-    letter-spacing: .02em; line-height: .93;
-    color: var(--white); margin-bottom: 1.2rem;
-  }
-  .nl-cta-p {
-    font-size: .93rem; color: var(--mid); line-height: 1.76;
-    margin-bottom: 2.25rem; max-width: 420px;
-    margin-left: auto; margin-right: auto;
-  }
-  .nl-cta-row { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
-
-  /* ── FOOTER ── */
-  .nl-footer { padding: 4rem 4rem 2.5rem; }
-  .nl-footer-top {
-    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.3fr;
-    gap: 3rem; padding-bottom: 3rem; border-bottom: 1px solid var(--border);
-  }
-  .nl-flogo {
-    font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem;
-    letter-spacing: .1em; color: var(--white); display: block; margin-bottom: .65rem;
-  }
-  .nl-ftagline { font-size: .79rem; color: var(--dim); line-height: 1.65; max-width: 200px; }
-  .nl-fcol-label {
-    font-family: 'DM Mono', monospace; font-size: .6rem; color: var(--muted);
-    letter-spacing: .13em; text-transform: uppercase; margin-bottom: 1.15rem;
-  }
-  .nl-flinks { display: flex; flex-direction: column; gap: .62rem; }
-  .nl-flink {
-    font-size: .79rem; color: var(--dim); background: none;
-    border: none; cursor: pointer; text-align: left;
-    font-family: 'DM Sans', sans-serif; padding: 0;
-    transition: color .2s;
-  }
-  .nl-flink:hover { color: var(--white); }
-  .nl-nl { display: flex; flex-direction: column; gap: .5rem; }
-  .nl-nl-input {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 4px; padding: .68rem 1rem;
-    font-family: 'DM Sans', sans-serif; font-size: .79rem;
-    color: var(--white); outline: none; transition: border-color .2s;
-  }
-  .nl-nl-input::placeholder { color: var(--muted); }
-  .nl-nl-input:focus { border-color: var(--mid); }
-  .nl-nl-btn {
-    background: var(--white); color: var(--bg);
-    border: none; border-radius: 4px; padding: .68rem 1rem;
-    font-family: 'DM Sans', sans-serif; font-size: .79rem; font-weight: 500;
-    cursor: pointer; transition: opacity .2s;
-  }
-  .nl-nl-btn:hover { opacity: .8; }
-  .nl-footer-bot {
-    display: flex; align-items: center; justify-content: space-between;
-    padding-top: 2rem;
-  }
-  .nl-copy {
-    font-family: 'DM Mono', monospace; font-size: .63rem; color: var(--muted);
-  }
-  .nl-legal { display: flex; gap: 1.5rem; }
-  .nl-legal-a {
-    font-family: 'DM Mono', monospace; font-size: .63rem; color: var(--muted);
-    background: none; border: none; cursor: pointer; padding: 0;
-    transition: color .2s; font-family: 'DM Mono', monospace;
-  }
-  .nl-legal-a:hover { color: var(--mid); }
-
-  /* ── REVEAL ── */
-  .nl-r {
-    opacity: 0; transform: translateY(22px);
-    transition: opacity .7s ease, transform .7s ease;
-  }
-  .nl-r.in { opacity: 1; transform: translateY(0); }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 960px) {
-    .nl-nav { padding: 0 1.5rem; }
-    .nl-hero { grid-template-columns: 1fr; padding: 80px 1.5rem 4rem; min-height: unset; }
-    .nl-hero-right { display: none; }
-    .nl-trust { padding: 1.75rem 1.5rem; }
-    .nl-section { padding: 4rem 1.5rem; }
-    .nl-bento { grid-template-columns: 1fr 1fr; }
-    .nl-bc.w2 { grid-column: span 2; }
-    .nl-how { grid-template-columns: 1fr; }
-    .nl-plans { grid-template-columns: 1fr; }
-    .nl-testis { grid-template-columns: 1fr; }
-    .nl-cta-wrap { padding: 4rem 1.5rem; }
-    .nl-footer { padding: 3rem 1.5rem 2rem; }
-    .nl-footer-top { grid-template-columns: 1fr 1fr; gap: 2rem; }
-    .nl-footer-bot { flex-direction: column; gap: 1rem; text-align: center; }
-  }
-  @media (max-width: 540px) {
-    .nl-bento { grid-template-columns: 1fr; }
-    .nl-bc.w2 { grid-column: span 1; }
-    .nl-footer-top { grid-template-columns: 1fr; }
-    .nl-nav-links { gap: 1rem; }
-  }
-`;
-
-/* ─── DATA ─── */
-const BRANDS = ["VAPEFEST", "CLOUDCON", "SMOKEHAUS", "PUFFJAM", "MISTHOUSE", "VAPORIX", "DRIFTVAPE", "AEROHAUS"];
-const BENEFITS = [
-  { icon: "🌬️", title: "Smooth, Consistent Draw", text: "Tuned for even airflow and vapor density — every pull feels intentional, never harsh.", wide: true, stat: "98%", statLabel: "satisfaction rate" },
-  { icon: "⚡", title: "Fast Charging",        text: "From zero to full in under 45 minutes. Never miss a session.",                         wide: false },
-  { icon: "🎨", title: "Bold Flavor Library",  text: "30+ curated e-liquid blends — from iced fruit to rich tobacco.",                       wide: false },
-  { icon: "🔒", title: "Safety First",         text: "Lab-tested, certified, and compliant with current safety standards.",                   wide: false },
-  { icon: "📦", title: "Free Same-Day Delivery", text: "Order before 3PM and receive your package the same day. Discreet, secure packaging.", wide: true, stat: "3H", statLabel: "avg. delivery" },
-];
-const STEPS = [
-  { n: "01", title: "Browse & Choose",  text: "Explore our catalog of devices, pods, and e-liquids. Filter by flavor, nicotine level, or device type to find your match." },
-  { n: "02", title: "Order & Pay",      text: "Checkout securely in under 2 minutes. Cards, GCash, Maya, and cash on delivery — no friction, just fast." },
-  { n: "03", title: "Receive & Enjoy",  text: "Arrives same-day in discreet packaging. Unbox, load up, and enjoy a session you'll keep coming back for." },
-];
-const PLANS = [
-  { tier: "Starter", price: "₱599", per: "/order", desc: "Perfect for first-timers who want to explore Niekobai risk-free.", feats: ["1 device of choice", "2 e-liquid flavors", "Free delivery", "7-day return"], hot: false, btnLabel: "Get Started" },
-  { tier: "Pro",     price: "₱1,299", per: "/month", desc: "Monthly supply drop with priority access to new flavors and devices.",  feats: ["Everything in Starter", "4 e-liquids per drop", "Early product access", "5% loyalty discount", "Priority support"], hot: true, btnLabel: "Subscribe Now" },
-  { tier: "Premium", price: "₱2,199", per: "/month", desc: "For the serious enthusiast. Maximum variety, maximum value.",           feats: ["Everything in Pro", "8 e-liquids per drop", "Device upgrade credits", "10% loyalty discount", "Dedicated account rep"], hot: false, btnLabel: "Go Premium" },
-];
-const TESTIS = [
-  { ini: "JR", name: "James R.",  role: "Pro Subscriber · Manila", text: "I've tried a lot of shops and nothing comes close. The flavors are spot on and delivery was crazy fast. Niekobai is my permanent go-to." },
-  { ini: "SL", name: "Sofia L.",  role: "Premium · Quezon City",  text: "The packaging is discreet and quality is unreal. I switched from a competitor after my first order and haven't looked back since." },
-  { ini: "KM", name: "Karl M.",   role: "Starter Pack · Makati",  text: "Same-day delivery is not a gimmick — it actually works. I ordered at 2PM and had my pack by 4:30. Elite service." },
-];
-const FAQS = [
-  { q: "What areas do you deliver to?",              a: "We deliver across Metro Manila including Manila, Quezon City, Makati, BGC, Pasig, and nearby areas. Same-day delivery is available for orders placed before 3PM." },
-  { q: "How does the monthly subscription work?",    a: "Your curated drop ships automatically each month. You can pause, change your plan, or cancel anytime from your account — no lock-in contracts." },
-  { q: "Are your products lab-tested and safe?",     a: "Yes. Every product passes third-party lab testing for heavy metals and contaminants. We only stock from certified suppliers with full documentation." },
-  { q: "What's your return and refund policy?",      a: "All orders come with a 7-day return window for defective or incorrect items. Contact support and we resolve it within 24 hours — full refund or replacement." },
-  { q: "What payment methods do you accept?",        a: "We accept credit/debit cards, GCash, Maya, bank transfer, and cash on delivery. All transactions are secured with SSL encryption." },
-];
-
-/* ─── REVEAL HOOK ─── */
-function useReveal() {
-  useEffect(() => {
-    const els = document.querySelectorAll(".nl-r");
-    const obs = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); obs.unobserve(e.target); } }),
-      { threshold: 0.1 }
-    );
-    els.forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  });
+interface Props {
+  profile: Profile | null;
+  skills: Record<string, Skill[]>;
+  recentProjects: Project[];
+  experiences: Experience[];
+  certifications: Certification[];
+  recommendations: Recommendation[];
+  gallery: GalleryItem[];
+  memberships: Membership[];
+  socialLinks: SocialLink[];
 }
 
-/* ─── MAIN COMPONENT ─── */
-export default function NeikoLai() {
-  const [openFaq, setOpenFaq] = useState(null);
-  const [mounted, setMounted] = useState(false);
-  useReveal();
+/* ─── Social Icons ─── */
+function SocialIcon({ platform, size = 'sm' }: { platform: string; size?: 'sm' | 'md' }) {
+  const cls = size === 'md' ? 'w-5 h-5' : 'w-4 h-4';
+  const p = platform.toLowerCase();
+  if (p === 'linkedin') return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={cls}>
+      <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" /><circle cx="4" cy="4" r="2" />
+    </svg>
+  );
+  if (p === 'github') return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={cls}>
+      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+    </svg>
+  );
+  if (p === 'twitter' || p === 'x') return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={cls}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+  if (p === 'instagram') return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={cls}>
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+    </svg>
+  );
+  return <span className="text-xs font-bold">{platform[0].toUpperCase()}</span>;
+}
 
-  // Inject font + styles
-  useEffect(() => {
-    // Font
-    if (!document.querySelector("#nl-font")) {
-      const link = document.createElement("link");
-      link.id = "nl-font"; link.rel = "stylesheet"; link.href = FONT_URL;
-      document.head.appendChild(link);
-    }
-    // Styles
-    if (!document.querySelector("#nl-styles")) {
-      const s = document.createElement("style");
-      s.id = "nl-styles"; s.textContent = styles;
-      document.head.appendChild(s);
-    }
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
-    document.body.style.background = "#090909";
-    setTimeout(() => setMounted(true), 80);
-  }, []);
+/* ─── Recommendations Carousel ─── */
+function RecommendationsCarousel({ items, dark }: { items: Recommendation[]; dark: boolean }) {
+  const [idx, setIdx] = useState(0);
+  if (!items.length) return null;
+  const prev = () => setIdx(i => (i - 1 + items.length) % items.length);
+  const next = () => setIdx(i => (i + 1) % items.length);
+  const r = items[idx];
+  return (
+    <div className="mt-5">
+      <div className={`relative rounded-xl p-6 min-h-[140px] border ${dark ? 'bg-gray-800 border-gray-700' : 'bg-slate-50 border-slate-100'}`}>
+        <svg className={`absolute top-4 left-5 w-7 h-7 ${dark ? 'text-gray-600' : 'text-slate-200'}`} fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+        </svg>
+        <p className={`text-sm leading-relaxed pl-9 italic ${dark ? 'text-gray-300' : 'text-slate-600'}`}>"{r.quote}"</p>
+        <div className={`mt-4 pl-9 flex items-center gap-2`}>
+          <div className={`w-6 h-0.5 rounded-full ${dark ? 'bg-gray-600' : 'bg-slate-300'}`} />
+          <div>
+            <p className={`font-semibold text-sm ${dark ? 'text-gray-100' : 'text-slate-800'}`}>{r.author_name}</p>
+            {r.author_role && <p className={`text-xs ${dark ? 'text-gray-500' : 'text-slate-400'}`}>{r.author_role}</p>}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-4">
+        <button onClick={prev} className={`p-2 rounded-lg border transition-all ${dark ? 'border-gray-700 hover:border-gray-500 hover:bg-gray-800' : 'border-slate-200 hover:border-slate-400 hover:bg-slate-50'}`}>
+          <svg className={`w-3.5 h-3.5 ${dark ? 'text-gray-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <div className="flex gap-1.5 items-center">
+          {items.map((_, i) => (
+            <button key={i} onClick={() => setIdx(i)}
+              className={`rounded-full transition-all ${i === idx ? (dark ? 'w-4 h-1.5 bg-gray-300' : 'w-4 h-1.5 bg-slate-700') : (dark ? 'w-1.5 h-1.5 bg-gray-600 hover:bg-gray-400' : 'w-1.5 h-1.5 bg-slate-300 hover:bg-slate-400')}`} />
+          ))}
+        </div>
+        <button onClick={next} className={`p-2 rounded-lg border transition-all ${dark ? 'border-gray-700 hover:border-gray-500 hover:bg-gray-800' : 'border-slate-200 hover:border-slate-400 hover:bg-slate-50'}`}>
+          <svg className={`w-3.5 h-3.5 ${dark ? 'text-gray-400' : 'text-slate-500'}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
-  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+/* ─── Gallery Strip ─── */
+function GalleryStrip({ items }: { items: GalleryItem[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * 280, behavior: 'smooth' });
+  if (!items.length) return null;
+  return (
+    <div className="relative group/gallery">
+      <button onClick={() => scroll(-1)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-full p-2 shadow-md hover:shadow-lg opacity-0 group-hover/gallery:opacity-100 transition-all -translate-x-3 group-hover/gallery:translate-x-0">
+        <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <div ref={ref} className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: 'none' }}>
+        {items.map(img => (
+          <div key={img.id} className="flex-shrink-0 w-60 h-44 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+            <img src={img.image_url} alt={img.caption ?? ''} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+          </div>
+        ))}
+      </div>
+      <button onClick={() => scroll(1)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-full p-2 shadow-md hover:shadow-lg opacity-0 group-hover/gallery:opacity-100 transition-all translate-x-3 group-hover/gallery:translate-x-0">
+        <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+  );
+}
+
+/* ─── Section Wrapper ─── */
+function Section({ title, children, dark }: { title: string; children: React.ReactNode; dark: boolean }) {
+  return (
+    <div className={`rounded-2xl border shadow-sm overflow-hidden ${dark ? 'bg-gray-900 border-gray-700' : 'bg-white border-slate-200'}`}>
+      <div className={`px-7 pt-6 pb-1 border-b ${dark ? 'border-gray-700' : 'border-slate-100'}`}>
+        <h2 className={`text-sm font-semibold uppercase tracking-widest ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{title}</h2>
+      </div>
+      <div className="p-7">{children}</div>
+    </div>
+  );
+}
+
+/* ─── Dark Mode Toggle ─── */
+function DarkToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${dark ? 'bg-slate-600' : 'bg-slate-200'}`}
+    >
+      <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${dark ? 'translate-x-6 bg-white' : 'translate-x-1 bg-white'}`} />
+      {/* Sun/Moon icons */}
+      <span className={`absolute left-1 text-[10px] transition-opacity ${dark ? 'opacity-0' : 'opacity-100'}`}>☀️</span>
+      <span className={`absolute right-1 text-[10px] transition-opacity ${dark ? 'opacity-100' : 'opacity-0'}`}>🌙</span>
+    </button>
+  );
+}
+
+/* ─── Main Portfolio Page ─── */
+export default function Welcome({
+  profile, skills, recentProjects, experiences,
+  certifications, recommendations, gallery, memberships, socialLinks,
+}: Props) {
+  const skillCategories = Object.keys(skills);
+  const [dark, setDark] = useState(false);
+
+  // Use first certification as achievement badge (optional)
+  const badge = certifications[0] ?? null;
 
   return (
-    <div className="nl-root">
+    <>
+      <Head title={profile?.name ?? 'Portfolio'} />
+      <div className={`min-h-screen font-sans transition-colors duration-300 ${dark ? 'bg-gray-950 text-gray-100' : 'bg-[#f1f5f9] text-slate-900'}`}>
 
-      {/* NAV */}
-      <nav className="nl-nav">
-        <span className="nl-logo">NEIKO<span>LAI</span></span>
-        <div className="nl-nav-links">
-          <button className="nl-nav-a" onClick={() => scrollTo("benefits")}>Benefits</button>
-          <button className="nl-nav-a" onClick={() => scrollTo("how")}>How it works</button>
-          <button className="nl-nav-a" onClick={() => scrollTo("pricing")}>Pricing</button>
-          <button className="nl-nav-a" onClick={() => scrollTo("faq")}>FAQ</button>
-          <button className="nl-nav-cta" onClick={() => scrollTo("pricing")}>Shop Now</button>
-        </div>
-      </nav>
 
-      {/* HERO */}
-      <section className="nl-hero">
-        <div className={`nl-hero-left nl-r${mounted ? " in" : ""}`}>
-          <div className="nl-badge">
-            <span className="nl-dot" />
-            10,000+ vapers trust Neiko Lai
-          </div>
-          <h1 className="nl-h1">
-            PREMIUM<br />
-            <em>VAPE</em><br />
-            CRAFTED.
-          </h1>
-          <p className="nl-hero-sub">
-            Curated devices, pods, and e-liquids by Neiko Lai.
-            Smooth draws, bold flavors — built for those who know the difference.
-          </p>
-          <div className="nl-hero-btns">
-            <button className="nl-btn-w" onClick={() => scrollTo("pricing")}>Shop Collection</button>
-            <button className="nl-btn-o" onClick={() => scrollTo("how")}>How it works</button>
-          </div>
-        </div>
 
-        <div className={`nl-hero-right nl-r${mounted ? " in" : ""}`} style={{ transitionDelay: "0.15s" }}>
-          <div className="nl-hero-card">
-            <div className="nl-hero-chip">NEW DROP 2025</div>
-            <div className="nl-hero-glyph">N</div>
-            <div className="nl-hero-device-label">Flagship Device</div>
-            <div className="nl-hero-bar">
-              <span className="nl-hero-bar-tag">NEIKO LAI</span>
-              <span className="nl-hero-bar-tag">EST. 2025</span>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+
+          {/* ── HERO CARD ── */}
+          <div className={`rounded-2xl border shadow-sm p-6 sm:p-8 relative ${dark ? 'bg-gray-900 border-gray-700' : 'bg-white border-slate-200'}`}>
+            {/* Dark mode toggle — top right of card */}
+            <div className="absolute top-5 right-5">
+              <DarkToggle dark={dark} onToggle={() => setDark(d => !d)} />
             </div>
-          </div>
-        </div>
-      </section>
+            <div className="flex flex-col sm:flex-row items-start gap-6">
 
-      {/* TRUST MARQUEE */}
-      <div className="nl-trust">
-        <span className="nl-trust-label">Trusted by vapers at</span>
-        <div className="nl-trust-rule" />
-        <div className="nl-marquee-clip">
-          <div className="nl-marquee">
-            {[...BRANDS, ...BRANDS].map((b, i) => (
-              <span key={i} className="nl-brand">{b}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* BENEFITS */}
-      <section className="nl-section" id="benefits">
-        <div className="nl-shead nl-r">
-          <p className="nl-eyebrow">Why Neiko Lai</p>
-          <h2 className="nl-sh">BUILT FOR<br />THE EXPERIENCE</h2>
-          <p className="nl-sp">We focus on how it elevates your session — not just what's in the box.</p>
-        </div>
-        <div className="nl-bento nl-r" style={{ transitionDelay: "0.1s" }}>
-          {BENEFITS.map((b, i) => (
-            <div key={i} className={`nl-bc${b.wide ? " w2" : ""}`}>
-              <div className="nl-bc-icon">{b.icon}</div>
-              <div className="nl-bc-title">{b.title}</div>
-              <div className="nl-bc-text">{b.text}</div>
-              {b.stat && (
-                <div className="nl-bc-stat">{b.stat} <small>{b.statLabel}</small></div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="nl-section" id="how">
-        <div className="nl-shead nl-r">
-          <p className="nl-eyebrow">Process</p>
-          <h2 className="nl-sh">HOW IT<br />WORKS</h2>
-          <p className="nl-sp">Get started with Neiko Lai in three simple steps.</p>
-        </div>
-        <div className="nl-how nl-r" style={{ transitionDelay: "0.1s" }}>
-          {STEPS.map(s => (
-            <div key={s.n} className="nl-step">
-              <div className="nl-step-num">{s.n}</div>
-              <div className="nl-step-title">{s.title}</div>
-              <div className="nl-step-text">{s.text}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section className="nl-section" id="pricing">
-        <div className="nl-shead nl-r">
-          <p className="nl-eyebrow">Pricing</p>
-          <h2 className="nl-sh">PICK YOUR<br />BUNDLE</h2>
-          <p className="nl-sp">Save more when you commit. Every plan includes free delivery and a 7-day return.</p>
-        </div>
-        <div className="nl-plans nl-r" style={{ transitionDelay: "0.1s" }}>
-          {PLANS.map(p => (
-            <div key={p.tier} className={`nl-plan${p.hot ? " hot" : ""}`}>
-              {p.hot && <div className="nl-hot-pill">Most Popular</div>}
-              <div className="nl-tier">{p.tier}</div>
-              <div className="nl-price">{p.price} <sub>{p.per}</sub></div>
-              <p className="nl-plan-desc">{p.desc}</p>
-              <hr className="nl-plan-hr" />
-              <button className={p.hot ? "nl-plan-btn-w" : "nl-plan-btn-o"}>{p.btnLabel}</button>
-              <div className="nl-feats">
-                {p.feats.map(f => <div key={f} className="nl-feat">{f}</div>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="nl-section" id="testimonials">
-        <div className="nl-shead nl-r">
-          <p className="nl-eyebrow">Reviews</p>
-          <h2 className="nl-sh">LOVED BY<br />VAPERS</h2>
-          <p className="nl-sp">Real people. Real sessions. Real feedback.</p>
-        </div>
-        <div className="nl-testis nl-r" style={{ transitionDelay: "0.1s" }}>
-          {TESTIS.map(t => (
-            <div key={t.ini} className="nl-testi">
-              <div className="nl-stars">★★★★★</div>
-              <p className="nl-testi-q">"{t.text}"</p>
-              <div className="nl-author">
-                <div className="nl-ava">{t.ini}</div>
-                <div>
-                  <div className="nl-aname">{t.name}</div>
-                  <div className="nl-arole">{t.role}</div>
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-200 ring-4 ring-slate-100">
+                  {profile?.avatar_url
+                    ? <img src={`/storage/${profile.avatar_url}`} alt={profile.name ?? ''} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300" />
+                  }
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* FAQ */}
-      <section className="nl-section" id="faq">
-        <div className="nl-shead nl-r">
-          <p className="nl-eyebrow">FAQ</p>
-          <h2 className="nl-sh">FREQUENTLY<br />ASKED</h2>
-        </div>
-        <div className="nl-faq-list nl-r" style={{ transitionDelay: "0.1s" }}>
-          {FAQS.map((f, i) => (
-            <div key={i} className={`nl-faq-item${openFaq === i ? " open" : ""}`}>
-              <button className="nl-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                {f.q}
-                <span className="nl-faq-ico">+</span>
-              </button>
-              <div className="nl-faq-a">{f.a}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                {/* Name + verified badge */}
+                <div className="flex items-center gap-2">
+                  <h1 className={`text-2xl font-bold leading-tight ${dark ? 'text-gray-50' : 'text-slate-900'}`}>
+                    {profile?.name ?? '—'}
+                  </h1>
+                  <div className="bg-blue-500 rounded-full p-0.5 flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
 
-      {/* CTA */}
-      <div className="nl-cta-wrap">
-        <div className="nl-cta-box nl-r">
-          <h2 className="nl-cta-h">READY TO<br />ELEVATE YOUR<br />SESSIONS?</h2>
-          <p className="nl-cta-p">Join 10,000+ vapers who chose quality, speed, and flavor. Your first order ships today.</p>
-          <div className="nl-cta-row">
-            <button className="nl-btn-w" onClick={() => scrollTo("pricing")}>Shop Now</button>
-            <button className="nl-btn-o" onClick={() => scrollTo("pricing")}>See Bundles</button>
+                {/* Location */}
+                {profile?.location && (
+                  <p className={`text-xs mt-1.5 flex items-center gap-1 ${dark ? 'text-gray-400' : 'text-slate-400'}`}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {profile.location}
+                  </p>
+                )}
+
+                {/* Bold headline */}
+                {profile?.headline && (
+                  <p className={`text-base font-semibold mt-3 ${dark ? 'text-gray-200' : 'text-slate-700'}`}>
+                    {profile.headline}
+                  </p>
+                )}
+
+                {/* Achievement pill (first certification) */}
+                {badge && (
+                  <div className="mt-3">
+                    <span className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                      🏆 {badge.name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex flex-wrap items-center gap-3 mt-5">
+                  {profile?.schedule_call_url && (
+                    <a href={profile.schedule_call_url} target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-semibold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors shadow-sm">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Schedule a Call
+                      <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </a>
+                  )}
+                  {profile?.email && (
+                    <a href={`mailto:${profile.email}`}
+                      className={`inline-flex items-center gap-2 text-xs font-medium transition-colors ${dark ? 'text-gray-300 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Send Email
+                    </a>
+                  )}
+                  {profile?.blog_url && (
+                    <a href={profile.blog_url} target="_blank" rel="noreferrer"
+                      className={`inline-flex items-center gap-2 text-xs font-medium transition-colors ${dark ? 'text-gray-300 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Read my blog
+                      <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Social icons - top right */}
+              {socialLinks.length > 0 && (
+                <div className="flex-shrink-0 flex flex-col gap-2 sm:items-end">
+                  {socialLinks.map(s => (
+                    <a key={s.id} href={s.url} target="_blank" rel="noreferrer" title={s.platform}
+                      className={`transition-colors ${dark ? 'text-gray-500 hover:text-gray-200' : 'text-slate-400 hover:text-slate-700'}`}>
+                      <SocialIcon platform={s.platform} size="md" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* ── TWO-COLUMN LAYOUT ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+            {/* LEFT COLUMN */}
+            <div className="lg:col-span-3 space-y-6">
+
+              {/* About */}
+              {profile?.about && (
+                <div id="about">
+                  <Section title="About" dark={dark}>
+                    <div className={`text-sm leading-relaxed space-y-3 ${dark ? 'text-gray-300' : 'text-slate-600'}`}>
+                      {profile.about.split('\n').map((para, i) => para.trim() && <p key={i}>{para}</p>)}
+                    </div>
+                  </Section>
+                </div>
+              )}
+
+              {/* Tech Stack */}
+              {skillCategories.length > 0 && (
+                <div id="skills">
+                  <Section title="Tech Stack" dark={dark}>
+                    <div className="space-y-5">
+                      {skillCategories.map(cat => (
+                        <div key={cat}>
+                          <p className={`text-[11px] font-semibold uppercase tracking-widest mb-2.5 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>{cat}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {skills[cat].map(s => (
+                              <span key={s.id}
+                                className={`px-3 py-1 border text-xs rounded-md font-medium transition-colors ${dark ? 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400 hover:bg-slate-100'}`}>
+                                {s.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Section>
+                </div>
+              )}
+
+              {/* Recent Projects */}
+              {recentProjects.length > 0 && (
+                <div id="projects">
+                  <Section title="Recent Projects" dark={dark}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {recentProjects.map(p => (
+                        <div key={p.id}
+                          className={`group border rounded-xl p-4 transition-all ${dark ? 'border-gray-700 bg-gray-800 hover:border-gray-500' : 'border-slate-200 bg-white hover:border-slate-400 hover:shadow-sm'}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <p className={`font-semibold text-sm ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{p.title}</p>
+                            {p.url && (
+                              <a href={p.url} target="_blank" rel="noreferrer"
+                                className={`flex-shrink-0 transition-colors mt-0.5 ${dark ? 'text-gray-600 hover:text-gray-300' : 'text-slate-400 hover:text-slate-700'}`}>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            )}
+                          </div>
+                          {p.description && (
+                            <p className={`text-xs mt-1.5 leading-relaxed ${dark ? 'text-gray-400' : 'text-slate-500'}`}>{p.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </Section>
+                </div>
+              )}
+
+              {/* Certifications */}
+              {certifications.length > 0 && (
+                <Section title="Certifications" dark={dark}>
+                  <div className="space-y-3">
+                    {certifications.map((c, i) => (
+                      <div key={c.id} className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-md border flex items-center justify-center text-xs font-semibold mt-0.5 ${dark ? 'bg-gray-800 border-gray-600 text-gray-400' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>
+                          {i + 1}
+                        </div>
+                        <div>
+                          <p className={`font-semibold text-sm leading-snug ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{c.name}</p>
+                          {c.issuer && <p className={`text-xs mt-0.5 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>{c.issuer}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Recommendations */}
+              {recommendations.length > 0 && (
+                <Section title="Recommendations" dark={dark}>
+                  <RecommendationsCarousel items={recommendations} dark={dark} />
+                </Section>
+              )}
+
+              {/* Memberships + Social */}
+              {(memberships.length > 0 || socialLinks.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {memberships.length > 0 && (
+                    <Section title="Memberships" dark={dark}>
+                      <div className="space-y-2.5">
+                        {memberships.map(m => (
+                          <div key={m.id} className="flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dark ? 'bg-gray-500' : 'bg-slate-400'}`} />
+                            {m.url
+                              ? <a href={m.url} target="_blank" rel="noreferrer" className={`text-sm hover:underline underline-offset-2 transition-colors ${dark ? 'text-gray-300 hover:text-gray-100' : 'text-slate-700 hover:text-slate-900'}`}>{m.name}</a>
+                              : <p className={`text-sm ${dark ? 'text-gray-300' : 'text-slate-700'}`}>{m.name}</p>
+                            }
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+                  {socialLinks.length > 0 && (
+                    <Section title="Connect" dark={dark}>
+                      <div className="space-y-3">
+                        {socialLinks.map(s => (
+                          <a key={s.id} href={s.url} target="_blank" rel="noreferrer"
+                            className={`flex items-center gap-3 text-sm transition-colors group ${dark ? 'text-gray-400 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
+                            <span className={`w-7 h-7 rounded-md border flex items-center justify-center transition-colors ${dark ? 'bg-gray-800 border-gray-700 group-hover:border-gray-500' : 'bg-slate-100 border-slate-200 group-hover:border-slate-400'}`}>
+                              <SocialIcon platform={s.platform} />
+                            </span>
+                            {s.platform}
+                          </a>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div id="experience" className="lg:col-span-2 space-y-6">
+
+              {/* Experience */}
+              {experiences.length > 0 && (
+                <Section title="Experience" dark={dark}>
+                  <div className="relative">
+                    <div className={`absolute left-[7px] top-2 bottom-2 w-px ${dark ? 'bg-gray-700' : 'bg-slate-100'}`} />
+                    <div className="space-y-5">
+                      {experiences.map(exp => (
+                        <div key={exp.id} className="flex items-start gap-4 relative">
+                          <div className={`relative z-10 w-3.5 h-3.5 rounded-full mt-1 flex-shrink-0 border-2 ${exp.is_current ? (dark ? 'border-gray-200 bg-gray-200' : 'border-slate-900 bg-slate-900') : (dark ? 'border-gray-600 bg-gray-900' : 'border-slate-300 bg-white')}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className={`font-semibold text-sm leading-tight ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{exp.role}</p>
+                                <p className={`text-xs mt-0.5 ${dark ? 'text-gray-400' : 'text-slate-500'}`}>{exp.company}</p>
+                              </div>
+                              <span className={`text-[11px] whitespace-nowrap flex-shrink-0 mt-0.5 font-medium ${dark ? 'text-gray-500' : 'text-slate-400'}`}>
+                                {exp.year_start}{exp.is_current ? ' – Present' : exp.year_end ? ` – ${exp.year_end}` : ''}
+                              </span>
+                            </div>
+                            {exp.is_current && (
+                              <span className={`mt-1.5 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md ${dark ? 'bg-gray-200 text-gray-900' : 'bg-slate-900 text-white'}`}>Current</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Section>
+              )}
+
+              {/* Contact */}
+              {(profile?.email || profile?.blog_url || profile?.schedule_call_url) && (
+                <Section title="Contact" dark={dark}>
+                  <div className="space-y-4">
+                    {profile?.email && (
+                      <div>
+                        <p className={`text-[11px] font-semibold uppercase tracking-widest mb-1 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>Email</p>
+                        <a href={`mailto:${profile.email}`} className={`text-sm transition-colors break-all ${dark ? 'text-gray-200 hover:text-blue-400' : 'text-slate-800 hover:text-blue-600'}`}>{profile.email}</a>
+                      </div>
+                    )}
+                    {profile?.schedule_call_url && (
+                      <div>
+                        <p className={`text-[11px] font-semibold uppercase tracking-widest mb-1 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>Let's Talk</p>
+                        <a href={profile.schedule_call_url} target="_blank" rel="noreferrer"
+                          className={`text-sm transition-colors flex items-center justify-between group ${dark ? 'text-gray-200 hover:text-blue-400' : 'text-slate-800 hover:text-blue-600'}`}>
+                          Schedule a Call
+                          <svg className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </a>
+                      </div>
+                    )}
+                    {profile?.blog_url && (
+                      <div>
+                        <p className={`text-[11px] font-semibold uppercase tracking-widest mb-1 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>Blog</p>
+                        <a href={profile.blog_url} target="_blank" rel="noreferrer"
+                          className={`text-sm transition-colors flex items-center justify-between group ${dark ? 'text-gray-200 hover:text-blue-400' : 'text-slate-800 hover:text-blue-600'}`}>
+                          Read My Blog
+                          <svg className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </Section>
+              )}
+            </div>
+          </div>
+
+          {/* ── GALLERY ── */}
+          {gallery.length > 0 && (
+            <Section title="Gallery" dark={dark}>
+              <GalleryStrip items={gallery} />
+            </Section>
+          )}
         </div>
+
+        {/* ── FOOTER ── */}
+        <footer className="text-center py-10 mt-4">
+          <p className={`text-xs font-medium tracking-widest uppercase ${dark ? 'text-gray-600' : 'text-slate-400'}`}>
+            © {new Date().getFullYear()} {profile?.name ?? 'Portfolio'}
+          </p>
+          <p className={`text-[11px] mt-1 ${dark ? 'text-gray-700' : 'text-slate-300'}`}>All rights reserved</p>
+        </footer>
       </div>
-
-      {/* FOOTER */}
-      <footer className="nl-footer">
-        <div className="nl-footer-top">
-          <div>
-            <span className="nl-flogo">NEIKO LAI</span>
-            <p className="nl-ftagline">Premium vape products. Fast delivery, curated quality, across Metro Manila.</p>
-          </div>
-          <div>
-            <p className="nl-fcol-label">Menu</p>
-            <div className="nl-flinks">
-              {["Shop", "Devices", "E-Liquids", "Bundles", "Blog"].map(l => (
-                <button key={l} className="nl-flink">{l}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="nl-fcol-label">Legal</p>
-            <div className="nl-flinks">
-              {["Terms of Service", "Privacy Policy", "Refund Policy", "Age Verification"].map(l => (
-                <button key={l} className="nl-flink">{l}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="nl-fcol-label">Newsletter</p>
-            <div className="nl-nl">
-              <input className="nl-nl-input" type="email" placeholder="your@email.com" />
-              <button className="nl-nl-btn">Subscribe</button>
-            </div>
-          </div>
-        </div>
-        <div className="nl-footer-bot">
-          <p className="nl-copy">© {new Date().getFullYear()} Neiko Lai. All rights reserved. 18+ only.</p>
-          <div className="nl-legal">
-            {["Privacy", "Terms", "Instagram", "Facebook"].map(l => (
-              <button key={l} className="nl-legal-a">{l}</button>
-            ))}
-          </div>
-        </div>
-      </footer>
-
-    </div>
+    </>
   );
 }
