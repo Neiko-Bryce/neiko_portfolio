@@ -19,6 +19,11 @@ Route::get('/', [PortfolioController::class, 'index'])->name('home');
 // Only reachable by typing /neikoport — no link exposed on the public site
 Route::get('/neikoport', fn () => redirect('/login'))->name('secret.entry');
 
+// ── Post-login redirect target ───────────────────────────────────────────────
+Route::get('/dashboard', fn () => redirect()->route('admin.profile'))
+    ->middleware('auth')
+    ->name('dashboard');
+
 // ── Admin Panel (auth required) ───────────────────────────────────────────────
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
 
