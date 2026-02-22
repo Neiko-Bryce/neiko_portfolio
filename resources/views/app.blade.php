@@ -35,7 +35,7 @@
 
     @php
         $profile = \App\Models\PortfolioProfile::first();
-        $favicon = $profile->avatar_url ? asset('storage/' . $profile->avatar_url) : asset('favicon.ico');
+        $favicon = $profile && $profile->avatar_url ? asset('storage/' . $profile->avatar_url) : asset('favicon.ico');
     @endphp
 
     <link rel="icon" href="{{ $favicon }}?v={{ time() }}" sizes="any">
