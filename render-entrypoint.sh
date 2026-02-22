@@ -3,17 +3,22 @@ set -e
 
 echo "🚀 Starting Neiko Portfolio deployment..."
 
-# Create .env file from environment variables (Render sets env vars, not .env)
-if [ ! -f /var/www/html/.env ]; then
-    echo "⚙️  Creating .env from environment variables..."
-    touch /var/www/html/.env
-fi
+# Create .env file from environment variables
+echo "⚙️  Syncing environment variables to .env..."
+echo "APP_NAME=\"$APP_NAME\"" > /var/www/html/.env
+echo "APP_ENV=$APP_ENV" >> /var/www/html/.env
+echo "APP_KEY=$APP_KEY" >> /var/www/html/.env
+echo "APP_DEBUG=$APP_DEBUG" >> /var/www/html/.env
+echo "APP_URL=$APP_URL" >> /var/www/html/.env
+echo "DB_CONNECTION=$DB_CONNECTION" >> /var/www/html/.env
+echo "DB_URL=\"$DB_URL\"" >> /var/www/html/.env
+echo "DATABASE_URL=\"$DATABASE_URL\"" >> /var/www/html/.env
 
 # Debug: Check if APP_KEY is present in the environment (print length only for security)
 if [ -z "$APP_KEY" ]; then
     echo "❌ ERROR: APP_KEY is empty in the environment!"
 else
-    echo "✅ APP_KEY detected (${#APP_KEY} characters)."
+    echo "✅ APP_KEY detected (${#APP_KEY} characters) and written to .env."
 fi
 
 # Run database migrations
