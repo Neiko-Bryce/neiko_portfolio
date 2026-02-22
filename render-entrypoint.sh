@@ -4,10 +4,16 @@ set -e
 echo "🚀 Starting Neiko Portfolio deployment..."
 
 # Create .env file from environment variables (Render sets env vars, not .env)
-# Laravel commands like config:cache expect a .env file to exist
 if [ ! -f /var/www/html/.env ]; then
     echo "⚙️  Creating .env from environment variables..."
     touch /var/www/html/.env
+fi
+
+# Debug: Check if APP_KEY is present in the environment (print length only for security)
+if [ -z "$APP_KEY" ]; then
+    echo "❌ ERROR: APP_KEY is empty in the environment!"
+else
+    echo "✅ APP_KEY detected (${#APP_KEY} characters)."
 fi
 
 # Run database migrations
@@ -17,6 +23,12 @@ php artisan migrate --force
 # Create storage symlink
 echo "🔗 Creating storage symlink..."
 php artisan storage:link --force 2>/dev/null || true
+
+# Clear any existing cache first
+echo "🧹 Clearing existing cache..."
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 
 # Cache configuration for performance
 echo "⚡ Caching configuration..."
