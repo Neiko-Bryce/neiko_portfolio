@@ -3,10 +3,11 @@ set -e
 
 echo "🚀 Starting Neiko Portfolio deployment..."
 
-# Generate APP_KEY if not already set
-if [ -z "$APP_KEY" ]; then
-    echo "⚙️  Generating application key..."
-    php artisan key:generate --force
+# Create .env file from environment variables (Render sets env vars, not .env)
+# Laravel commands like config:cache expect a .env file to exist
+if [ ! -f /var/www/html/.env ]; then
+    echo "⚙️  Creating .env from environment variables..."
+    touch /var/www/html/.env
 fi
 
 # Run database migrations
