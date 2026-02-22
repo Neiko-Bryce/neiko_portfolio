@@ -12,7 +12,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 interface Profile {
     name: string | null; headline: string | null; location: string | null;
     about: string | null; avatar_url: string | null; email: string | null;
-    schedule_call_url: string | null; blog_url: string | null;
+    schedule_call_url: string | null; blog_url: string | null; company_url: string | null;
 }
 
 export default function AdminProfile({ profile }: { profile: Profile | null }) {
@@ -27,6 +27,7 @@ export default function AdminProfile({ profile }: { profile: Profile | null }) {
         email: profile?.email ?? '',
         schedule_call_url: profile?.schedule_call_url ?? '',
         blog_url: profile?.blog_url ?? '',
+        company_url: profile?.company_url ?? '',
         avatar: null as File | null,
     });
 
@@ -206,6 +207,17 @@ export default function AdminProfile({ profile }: { profile: Profile | null }) {
                                 placeholder="https://yourblog.com"
                             />
                             {errors.blog_url && <p className="text-xs text-destructive">{errors.blog_url}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="company_url">Start Your Digital Journey</Label>
+                            <Input
+                                id="company_url"
+                                type="url"
+                                value={data.company_url}
+                                onChange={e => setData('company_url', e.target.value)}
+                                placeholder="https://treebyte.vercel.app/"
+                            />
+                            {errors.company_url && <p className="text-xs text-destructive">{errors.company_url}</p>}
                         </div>
                     </CardContent>
                 </Card>

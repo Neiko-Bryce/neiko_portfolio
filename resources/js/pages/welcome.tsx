@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 interface Profile {
   name: string | null; headline: string | null; location: string | null;
   about: string | null; avatar_url: string | null; email: string | null;
-  schedule_call_url: string | null; blog_url: string | null;
+  schedule_call_url: string | null; blog_url: string | null; company_url: string | null;
 }
 interface Skill { id: number; category: string; name: string }
 interface Project { id: number; title: string; description: string | null; url: string | null; is_recent: boolean }
@@ -52,7 +52,7 @@ function SocialIcon({ platform, size = 'sm' }: { platform: string; size?: 'sm' |
       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
     </svg>
   );
-  return <span className="text-xs font-bold">{platform[0].toUpperCase()}</span>;
+  return <span className="text-xs font-bold">{platform?.charAt(0).toUpperCase() || '?'}</span>;
 }
 
 /* ─── Recommendations Carousel ─── */
@@ -61,7 +61,9 @@ function RecommendationsCarousel({ items, dark }: { items: Recommendation[]; dar
   if (!items.length) return null;
   const prev = () => setIdx(i => (i - 1 + items.length) % items.length);
   const next = () => setIdx(i => (i + 1) % items.length);
-  const r = items[idx];
+  const activeIdx = idx >= items.length ? 0 : idx;
+  const r = items[activeIdx];
+  if (!r) return null;
   return (
     <div className="mt-5">
       <div className={`relative rounded-xl p-6 min-h-[140px] border ${dark ? 'bg-gray-800 border-gray-700' : 'bg-slate-50 border-slate-100'}`}>
@@ -199,8 +201,8 @@ function DarkToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void })
 
 /* ─── Main Portfolio Page ─── */
 export default function Welcome({
-  profile, skills, recentProjects, experiences,
-  certifications, recommendations, gallery, memberships, socialLinks,
+  profile, skills = {}, recentProjects = [], experiences = [],
+  certifications = [], recommendations = [], gallery = [], memberships = [], socialLinks = [],
 }: Props) {
   const skillCategories = Object.keys(skills);
   const [dark, setDark] = useState(false);
@@ -289,15 +291,26 @@ export default function Welcome({
                       <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </a>
                   )}
-                  {profile?.email && (
-                    <a href={`mailto:${profile.email}`}
-                      className={`inline-flex items-center gap-2 text-xs font-medium transition-colors ${dark ? 'text-gray-300 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      Send Email
-                    </a>
-                  )}
+                  <div className="flex flex-wrap items-center gap-6">
+                    {profile?.email && (
+                      <a href={`mailto:${profile.email}`}
+                        className={`inline-flex items-center gap-2 text-[13px] font-medium transition-colors ${dark ? 'text-gray-400 hover:text-gray-100' : 'text-slate-500 hover:text-slate-900'}`}>
+                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Send Email
+                      </a>
+                    )}
+                    {profile?.company_url && (
+                      <a href={profile.company_url} target="_blank" rel="noreferrer"
+                        className={`inline-flex items-center gap-2 text-[13px] font-medium transition-colors ${dark ? 'text-gray-400 hover:text-gray-100' : 'text-slate-500 hover:text-slate-900'}`}>
+                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        Start Your Digital Journey
+                      </a>
+                    )}
+                  </div>
                   {profile?.blog_url && (
                     <a href={profile.blog_url} target="_blank" rel="noreferrer"
                       className={`inline-flex items-center gap-2 text-xs font-medium transition-colors ${dark ? 'text-gray-300 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
@@ -383,24 +396,6 @@ export default function Welcome({
                 </div>
               )}
 
-              {/* Certifications */}
-              {certifications.length > 0 && (
-                <Section title="Certifications" dark={dark} icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><circle cx="12" cy="8" r="7" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>}>
-                  <div className="space-y-3">
-                    {certifications.map((c, i) => (
-                      <div key={c.id} className="flex items-start gap-3">
-                        <div className={`flex-shrink-0 w-6 h-6 rounded-md border flex items-center justify-center text-xs font-semibold mt-0.5 ${dark ? 'bg-gray-800 border-gray-600 text-gray-400' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>
-                          {i + 1}
-                        </div>
-                        <div>
-                          <p className={`font-semibold text-sm leading-snug ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{c.name}</p>
-                          {c.issuer && <p className={`text-xs mt-0.5 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>{c.issuer}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-              )}
 
               {/* Memberships */}
               {memberships.length > 0 && (
@@ -414,6 +409,23 @@ export default function Welcome({
                           : <p className={`text-sm ${dark ? 'text-gray-300' : 'text-slate-700'}`}>{m.name}</p>
                         }
                       </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Connect */}
+              {socialLinks.length > 0 && (
+                <Section title="Connect" dark={dark} icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}>
+                  <div className="space-y-3">
+                    {socialLinks.map(s => (
+                      <a key={s.id} href={s.url} target="_blank" rel="noreferrer"
+                        className={`flex items-center gap-3 text-sm transition-colors group ${dark ? 'text-gray-400 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
+                        <span className={`w-7 h-7 rounded-md border flex items-center justify-center transition-colors ${dark ? 'bg-gray-800 border-gray-700 group-hover:border-gray-500' : 'bg-slate-100 border-slate-200 group-hover:border-slate-400'}`}>
+                          <SocialIcon platform={s.platform} />
+                        </span>
+                        {s.platform}
+                      </a>
                     ))}
                   </div>
                 </Section>
@@ -451,7 +463,7 @@ export default function Welcome({
                               </div>
                               <div className="flex-shrink-0 pt-0.5">
                                 <span className={`text-[11px] font-medium tabular-nums tracking-wide ${dark ? 'text-gray-500' : 'text-slate-400'}`}>
-                                  {exp.year_start}{exp.is_current ? ' — Present' : ''}
+                                  {exp.year_start}
                                 </span>
                               </div>
                             </div>
@@ -493,6 +505,16 @@ export default function Welcome({
                         </a>
                       </div>
                     )}
+                    {profile?.company_url && (
+                      <div>
+                        <p className={`text-[11px] font-semibold uppercase tracking-widest mb-1 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>Company</p>
+                        <a href={profile.company_url} target="_blank" rel="noreferrer"
+                          className={`text-sm transition-colors flex items-center justify-between group ${dark ? 'text-gray-200 hover:text-blue-400' : 'text-slate-800 hover:text-blue-600'}`}>
+                          Start Your Digital Journey
+                          <svg className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </Section>
               )}
@@ -504,18 +526,20 @@ export default function Welcome({
                 </Section>
               )}
 
-              {/* Connect */}
-              {socialLinks.length > 0 && (
-                <Section title="Connect" dark={dark} icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}>
+              {/* Certifications */}
+              {certifications.length > 0 && (
+                <Section title="Certifications" dark={dark} icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><circle cx="12" cy="8" r="7" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>}>
                   <div className="space-y-3">
-                    {socialLinks.map(s => (
-                      <a key={s.id} href={s.url} target="_blank" rel="noreferrer"
-                        className={`flex items-center gap-3 text-sm transition-colors group ${dark ? 'text-gray-400 hover:text-gray-100' : 'text-slate-600 hover:text-slate-900'}`}>
-                        <span className={`w-7 h-7 rounded-md border flex items-center justify-center transition-colors ${dark ? 'bg-gray-800 border-gray-700 group-hover:border-gray-500' : 'bg-slate-100 border-slate-200 group-hover:border-slate-400'}`}>
-                          <SocialIcon platform={s.platform} />
-                        </span>
-                        {s.platform}
-                      </a>
+                    {certifications.map((c, i) => (
+                      <div key={c.id} className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-md border flex items-center justify-center text-xs font-semibold mt-0.5 ${dark ? 'bg-gray-800 border-gray-600 text-gray-400' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>
+                          {i + 1}
+                        </div>
+                        <div>
+                          <p className={`font-semibold text-sm leading-snug ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{c.name}</p>
+                          {c.issuer && <p className={`text-xs mt-0.5 ${dark ? 'text-gray-500' : 'text-slate-400'}`}>{c.issuer}</p>}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </Section>

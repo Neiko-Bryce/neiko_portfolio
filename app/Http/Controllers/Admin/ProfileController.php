@@ -26,6 +26,7 @@ class ProfileController extends Controller
             'email'             => 'nullable|email|max:255',
             'schedule_call_url' => 'nullable|url|max:255',
             'blog_url'          => 'nullable|url|max:255',
+            'company_url'       => 'nullable|url|max:255',
             'avatar'            => 'nullable|image|max:2048',
         ]);
 
