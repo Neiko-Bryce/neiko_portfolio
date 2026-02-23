@@ -4,6 +4,6 @@
  */
 export function dashboard(): string { return '/dashboard'; }
 export function home(): string { return '/'; }
-export function login(): string { return '/login'; }
+export function login(): string { return '/login-052205'; }
 export function register(): string { return '/register'; }
 export function logout(): string { return '/logout'; }

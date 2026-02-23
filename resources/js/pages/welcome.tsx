@@ -8,7 +8,7 @@ interface Profile {
   schedule_call_url: string | null; blog_url: string | null; company_url: string | null;
 }
 interface Skill { id: number; category: string; name: string }
-interface Project { id: number; title: string; description: string | null; url: string | null; is_recent: boolean }
+interface Project { id: number; title: string; description: string | null; image: string | null; url: string | null; is_recent: boolean }
 interface Experience { id: number; role: string; company: string; year_start: string | null; year_end: string | null; is_current: boolean }
 interface Certification { id: number; name: string; issuer: string | null }
 interface Recommendation { id: number; quote: string; author_name: string; author_role: string | null }
@@ -374,21 +374,28 @@ export default function Welcome({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {recentProjects.map(p => (
                         <div key={p.id}
-                          className={`group border rounded-xl p-4 transition-all ${dark ? 'border-gray-700 bg-gray-800 hover:border-gray-500' : 'border-slate-200 bg-white hover:border-slate-400 hover:shadow-sm'}`}>
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={`font-semibold text-sm ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{p.title}</p>
-                            {p.url && (
-                              <a href={p.url} target="_blank" rel="noreferrer"
-                                className={`flex-shrink-0 transition-colors mt-0.5 ${dark ? 'text-gray-600 hover:text-gray-300' : 'text-slate-400 hover:text-slate-700'}`}>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </a>
+                          className={`group border rounded-xl overflow-hidden transition-all ${dark ? 'border-gray-700 bg-gray-800 hover:border-gray-500' : 'border-slate-200 bg-white hover:border-slate-400 hover:shadow-sm'}`}>
+                          {p.image && (
+                            <div className="aspect-[16/9] w-full overflow-hidden border-b border-inherit">
+                              <img src={`/storage/${p.image}`} alt={p.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`font-semibold text-sm ${dark ? 'text-gray-100' : 'text-slate-900'}`}>{p.title}</p>
+                              {p.url && (
+                                <a href={p.url} target="_blank" rel="noreferrer"
+                                  className={`flex-shrink-0 transition-colors mt-0.5 ${dark ? 'text-gray-600 hover:text-gray-300' : 'text-slate-400 hover:text-slate-700'}`}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                </a>
+                              )}
+                            </div>
+                            {p.description && (
+                              <p className={`text-xs mt-1.5 leading-relaxed ${dark ? 'text-gray-400' : 'text-slate-500'}`}>{p.description}</p>
                             )}
                           </div>
-                          {p.description && (
-                            <p className={`text-xs mt-1.5 leading-relaxed ${dark ? 'text-gray-400' : 'text-slate-500'}`}>{p.description}</p>
-                          )}
                         </div>
                       ))}
                     </div>
