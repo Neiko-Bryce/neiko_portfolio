@@ -35,11 +35,11 @@
 
     @php
         $profile = \App\Models\PortfolioProfile::first();
-        $favicon = $profile && $profile->avatar_url ? asset('storage/' . $profile->avatar_url) : asset('favicon.ico');
+        $favicon = $profile && $profile->avatar_url ? '/storage/' . $profile->avatar_url : '/favicon.ico';
     @endphp
 
-    <link rel="icon" href="{{ $favicon }}?v={{ time() }}" sizes="any">
-    <link rel="apple-touch-icon" href="{{ $favicon }}?v={{ time() }}">
+    <link rel="icon" href="{{ $favicon }}?v=1.0.1" sizes="any">
+    <link rel="apple-touch-icon" href="{{ $favicon }}?v=1.0.1">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
