@@ -8,7 +8,7 @@ interface Profile {
   schedule_call_url: string | null; blog_url: string | null; company_url: string | null;
 }
 interface Skill { id: number; category: string; name: string }
-interface Project { id: number; title: string; description: string | null; image: string | null; url: string | null; is_recent: boolean }
+interface Project { id: number; title: string; description: string | null; image_url: string | null; url: string | null; is_recent: boolean }
 interface Experience { id: number; role: string; company: string; year_start: string | null; year_end: string | null; is_current: boolean }
 interface Certification { id: number; name: string; issuer: string | null }
 interface Recommendation { id: number; quote: string; author_name: string; author_role: string | null }
@@ -375,9 +375,9 @@ export default function Welcome({
                       {recentProjects.map(p => (
                         <div key={p.id}
                           className={`group border rounded-xl overflow-hidden transition-all ${dark ? 'border-gray-700 bg-gray-800 hover:border-gray-500' : 'border-slate-200 bg-white hover:border-slate-400 hover:shadow-sm'}`}>
-                          {p.image && (
+                          {p.image_url && (
                             <div className="aspect-[16/9] w-full overflow-hidden border-b border-inherit">
-                              <img src={`/storage/${p.image}`} alt={p.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              <img src={p.image_url} alt={p.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             </div>
                           )}
                           <div className="p-4">

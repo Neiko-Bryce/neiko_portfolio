@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout';
 
-interface Project { id: number; title: string; description: string | null; image: string | null; url: string | null; is_recent: boolean; sort_order: number }
+interface Project { id: number; title: string; description: string | null; image_url: string | null; url: string | null; is_recent: boolean; sort_order: number }
 
 const blank = () => ({ title: '', description: '', image: null as File | null, url: '', is_recent: true, sort_order: 0 });
 
@@ -29,7 +29,7 @@ function ProjectForm({
     onSubmit: (e: React.FormEvent) => void;
     currentImage?: string | null;
 }) {
-    const [preview, setPreview] = useState<string | null>(currentImage ? `/storage/${currentImage}` : null);
+    const [preview, setPreview] = useState<string | null>(currentImage || null);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
@@ -39,7 +39,7 @@ function ProjectForm({
             reader.onloadend = () => setPreview(reader.result as string);
             reader.readAsDataURL(file);
         } else {
-            setPreview(currentImage ? `/storage/${currentImage}` : null);
+            setPreview(currentImage || null);
         }
     };
 
@@ -170,7 +170,7 @@ export default function AdminProjects({ projects }: { projects: Project[] }) {
                                                 form={editForm}
                                                 submitLabel="Save"
                                                 onCancel={() => setEditId(null)}
-                                                currentImage={p.image}
+                                                currentImage={p.image_url}
                                                 onSubmit={e => {
                                                     e.preventDefault();
                                                     // Use post with _method: 'put' for file upload compatibility
@@ -187,9 +187,9 @@ export default function AdminProjects({ projects }: { projects: Project[] }) {
                                         ) : (
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="flex gap-4 flex-1 min-w-0">
-                                                    {p.image && (
+                                                    {p.image_url && (
                                                         <div className="w-16 h-16 rounded-lg overflow-hidden border flex-shrink-0">
-                                                            <img src={`/storage/${p.image}`} alt={p.title} className="w-full h-full object-cover" />
+                                                            <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" />
                                                         </div>
                                                     )}
                                                     <div className="flex-1 min-w-0">

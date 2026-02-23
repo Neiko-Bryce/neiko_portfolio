@@ -11,4 +11,10 @@ class PortfolioProfile extends Model
         'name', 'headline', 'location', 'about',
         'avatar_url', 'email', 'schedule_call_url', 'blog_url', 'company_url',
     ];
+    protected $appends = ['avatar_url_full'];
+
+    public function getAvatarUrlFullAttribute()
+    {
+        return $this->avatar_url ? \Illuminate\Support\Facades\Storage::url($this->avatar_url) : null;
+    }
 }
