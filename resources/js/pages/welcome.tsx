@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /* ─── Types ─── */
 interface Profile {
@@ -97,35 +97,106 @@ function RecommendationsCarousel({ items, dark }: { items: Recommendation[]; dar
   );
 }
 
-/* ─── Gallery Grid ─── */
-function GalleryGrid({ items, onImageClick }: { items: GalleryItem[]; onImageClick: (item: GalleryItem) => void }) {
+/* ─── Gallery Carousel ─── */
+function GalleryCarousel({ items, onImageClick, dark }: { items: GalleryItem[]; onImageClick: (item: GalleryItem) => void; dark: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      setShowLeft(el.scrollLeft > 20);
+      setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 20);
+    };
+
+    el.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [items]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = scrollRef.current.clientWidth * 0.8;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   if (!items.length) return null;
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {items.map(img => (
-        <div key={img.id}
-          onClick={() => onImageClick(img)}
-          className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 cursor-zoom-in">
-          <img src={img.image_url} alt={img.caption ?? ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-            <p className="text-white text-[10px] font-medium truncate">{img.caption ?? 'View Image'}</p>
+    <div className="relative group/carousel">
+      {/* Scroll Container */}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 px-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {items.map(img => (
+          <div key={img.id}
+            onClick={() => onImageClick(img)}
+            className="flex-shrink-0 w-[240px] sm:w-[300px] aspect-square rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 cursor-zoom-in snap-start group relative">
+            <img src={img.image_url} alt={img.caption ?? ''} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+              <p className="text-white text-[10px] font-medium truncate">{img.caption ?? 'View Image'}</p>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Balanced Navigation Arrows */}
+      {showLeft && (
+        <button
+          onClick={() => scroll('left')}
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full border shadow-xl backdrop-blur-md transition-all opacity-0 group-hover/carousel:opacity-100 ${dark ? 'bg-gray-800/80 border-gray-700 text-white hover:bg-gray-700' : 'bg-white/80 border-slate-200 text-slate-800 hover:bg-slate-50'
+            }`}
+          title="Scroll Left"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+      )}
+      {showRight && (
+        <button
+          onClick={() => scroll('right')}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full border shadow-xl backdrop-blur-md transition-all opacity-0 group-hover/carousel:opacity-100 ${dark ? 'bg-gray-800/80 border-gray-700 text-white hover:bg-gray-700' : 'bg-white/80 border-slate-200 text-slate-800 hover:bg-slate-50'
+            }`}
+          title="Scroll Right"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </button>
+      )}
     </div>
   );
 }
 
 /* ─── Lightbox Modal ─── */
-function Lightbox({ item, onClose }: { item: GalleryItem; onClose: () => void }) {
+function Lightbox({ item, onClose, onPrev, onNext, hasMultiple }: {
+  item: GalleryItem;
+  onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasMultiple?: boolean;
+}) {
   useEffect(() => {
     // Lock scroll
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = 'hidden';
 
-    // Handle Escape key
+    // Handle keydown
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      if (onPrev && (e.key === 'ArrowLeft')) onPrev();
+      if (onNext && (e.key === 'ArrowRight')) onNext();
     };
     window.addEventListener('keydown', handleKeyDown);
 
@@ -133,31 +204,58 @@ function Lightbox({ item, onClose }: { item: GalleryItem; onClose: () => void })
       document.body.style.overflow = originalStyle;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, onPrev, onNext]);
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-300"
       onClick={onClose}
     >
-      {/* Close button - larger and better hit area */}
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all z-10"
-        title="Close (Esc)"
-      >
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
+      {/* Top controls */}
+      <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10">
+        <div className="text-white/50 text-xs font-medium uppercase tracking-widest hidden sm:block">
+          Gallery View
+        </div>
+        <button
+          onClick={onClose}
+          className="p-2 rounded-full bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+          title="Close (Esc)"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      {/* Navigation Arrows */}
+      {hasMultiple && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
+            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white transition-all z-10 border border-white/5 shadow-2xl"
+            title="Previous (Left Arrow)"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onNext?.(); }}
+            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white transition-all z-10 border border-white/5 shadow-2xl"
+            title="Next (Right Arrow)"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </>
+      )}
 
       <div
         className="relative w-full h-full flex flex-col items-center justify-center p-4 md:p-12 select-none"
         onClick={e => e.stopPropagation()}
       >
-        <img
-          src={item.image_url}
-          alt={item.caption ?? ''}
-          className="max-w-full max-h-full object-contain rounded-md shadow-2xl pointer-events-none"
-        />
+        <div className="relative group/image max-w-full max-h-full flex items-center justify-center">
+          <img
+            src={item.image_url}
+            alt={item.caption ?? ''}
+            className="max-w-full max-h-full object-contain rounded-md shadow-2xl pointer-events-none animate-in zoom-in-95 duration-300"
+          />
+        </div>
         {item.caption && (
           <div className="absolute bottom-10 left-0 right-0 px-6 text-center">
             <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/10">
@@ -206,7 +304,24 @@ export default function Welcome({
 }: Props) {
   const skillCategories = Object.keys(skills);
   const [dark, setDark] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+  const [selectedImageIdx, setSelectedImageIdx] = useState<number | null>(null);
+
+  const openLightbox = (item: GalleryItem) => {
+    const idx = gallery.findIndex(g => g.id === item.id);
+    setSelectedImageIdx(idx !== -1 ? idx : null);
+  };
+
+  const nextImage = () => {
+    if (selectedImageIdx === null) return;
+    setSelectedImageIdx((selectedImageIdx + 1) % gallery.length);
+  };
+
+  const prevImage = () => {
+    if (selectedImageIdx === null) return;
+    setSelectedImageIdx((selectedImageIdx - 1 + gallery.length) % gallery.length);
+  };
+
+  const selectedImage = selectedImageIdx !== null ? gallery[selectedImageIdx] : null;
 
   // Use first certification as achievement badge (optional)
   const badge = certifications[0] ?? null;
@@ -557,13 +672,19 @@ export default function Welcome({
           {/* ── GALLERY ── */}
           {gallery.length > 0 && (
             <Section title="Gallery" dark={dark} icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path strokeLinecap="round" strokeLinejoin="round" d="m21 15-3.086-3.086a2 2 0 00-2.828 0L6 21" /></svg>}>
-              <GalleryGrid items={gallery} onImageClick={setSelectedImage} />
+              <GalleryCarousel items={gallery} onImageClick={openLightbox} dark={dark} />
             </Section>
           )}
 
           {/* Lightbox Modal */}
           {selectedImage && (
-            <Lightbox item={selectedImage} onClose={() => setSelectedImage(null)} />
+            <Lightbox
+              item={selectedImage}
+              onClose={() => setSelectedImageIdx(null)}
+              onNext={nextImage}
+              onPrev={prevImage}
+              hasMultiple={gallery.length > 1}
+            />
           )}
         </div>
 
