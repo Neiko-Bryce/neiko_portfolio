@@ -27,7 +27,7 @@ trait CompressibleBase64
                 imagesavealpha($img, true);
                 break;
             case 'image/webp':
-                $img = imagecreatefromwebp($path);
+                $img = function_exists('imagecreatefromwebp') ? imagecreatefromwebp($path) : null;
                 break;
             default:
                 // Fallback to original size if format not supported for resizing
@@ -64,14 +64,9 @@ trait CompressibleBase64
 
         // Buffer the output
         ob_start();
-        // We output as WebP if possible for best compression, or JPEG
-        if ($mime == 'image/png' || $mime == 'image/webp') {
-            imagewebp($img, null, $quality);
-            $outputMime = 'image/webp';
-        } else {
-            imagejpeg($img, null, $quality);
-            $outputMime = 'image/jpeg';
-        }
+        // Always output as JPEG for maximum compatibility
+        imagejpeg($img, null, $quality);
+        $outputMime = 'image/jpeg';
         $data = ob_get_clean();
         imagedestroy($img);
 
