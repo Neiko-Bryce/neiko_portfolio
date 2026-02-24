@@ -13,7 +13,10 @@ class GalleryController extends Controller
     public function index()
     {
         $gallery = PortfolioGallery::orderBy('sort_order')->get()->map(function ($item) {
-            $item->image_url = Storage::url($item->image_path);
+            // Already includes base64 or fallback to Storage::url
+            $item->image_url = (str_starts_with($item->image_path, 'data:'))
+                ? $item->image_path
+                : Storage::url($item->image_path);
             return $item;
         });
         return Inertia::render('admin/gallery', ['gallery' => $gallery]);
@@ -27,10 +30,11 @@ class GalleryController extends Controller
             'sort_order' => 'nullable|integer',
         ]);
 
-        $path = $request->file('image')->store('portfolio/gallery', 'public');
+        $image = $request->file('image');
+        $base64 = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
 
         PortfolioGallery::create([
-            'image_path' => $path,
+            'image_path' => $base64,
             'caption'    => $request->caption,
             'sort_order' => $request->sort_order ?? 0,
         ]);
@@ -50,7 +54,9 @@ class GalleryController extends Controller
 
     public function destroy(PortfolioGallery $gallery)
     {
-        Storage::disk('public')->delete($gallery->image_path);
+        if (!str_starts_with($gallery->image_path, 'data:')) {
+            Storage::disk('public')->delete($gallery->image_path);
+        }
         $gallery->delete();
         return redirect()->route('admin.gallery')->with('success', 'Photo deleted.');
     }

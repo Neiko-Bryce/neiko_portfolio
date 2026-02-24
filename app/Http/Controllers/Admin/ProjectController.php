@@ -29,7 +29,8 @@ class ProjectController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('projects', 'public');
+            $image = $request->file('image');
+            $data['image'] = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
         }
 
         PortfolioProject::create($data);
@@ -48,10 +49,11 @@ class ProjectController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            if ($project->image) {
+            if ($project->image && !str_starts_with($project->image, 'data:')) {
                 Storage::disk('public')->delete($project->image);
             }
-            $data['image'] = $request->file('image')->store('projects', 'public');
+            $image = $request->file('image');
+            $data['image'] = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
         }
 
         $project->update($data);
@@ -60,7 +62,7 @@ class ProjectController extends Controller
 
     public function destroy(PortfolioProject $project)
     {
-        if ($project->image) {
+        if ($project->image && !str_starts_with($project->image, 'data:')) {
             Storage::disk('public')->delete($project->image);
         }
         $project->delete();

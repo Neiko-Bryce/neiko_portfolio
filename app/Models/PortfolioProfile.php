@@ -15,6 +15,9 @@ class PortfolioProfile extends Model
 
     public function getAvatarUrlFullAttribute()
     {
-        return $this->avatar_url ? \Illuminate\Support\Facades\Storage::url($this->avatar_url) : null;
+        if (!$this->avatar_url) return null;
+        return (str_starts_with($this->avatar_url, 'data:'))
+            ? $this->avatar_url
+            : \Illuminate\Support\Facades\Storage::url($this->avatar_url);
     }
 }

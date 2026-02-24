@@ -13,6 +13,9 @@ class PortfolioProject extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? \Illuminate\Support\Facades\Storage::url($this->image) : null;
+        if (!$this->image) return null;
+        return (str_starts_with($this->image, 'data:'))
+            ? $this->image
+            : \Illuminate\Support\Facades\Storage::url($this->image);
     }
 }

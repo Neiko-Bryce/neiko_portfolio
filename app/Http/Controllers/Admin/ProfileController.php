@@ -33,10 +33,11 @@ class ProfileController extends Controller
         $profile = PortfolioProfile::firstOrNew([]);
 
         if ($request->hasFile('avatar')) {
-            if ($profile->avatar_url) {
+            if ($profile->avatar_url && !str_starts_with($profile->avatar_url, 'data:')) {
                 Storage::disk('public')->delete($profile->avatar_url);
             }
-            $data['avatar_url'] = $request->file('avatar')->store('portfolio/avatar', 'public');
+            $image = $request->file('avatar');
+            $data['avatar_url'] = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
         }
 
         unset($data['avatar']);
