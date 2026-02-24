@@ -8,7 +8,7 @@ trait CompressibleBase64
      * Resizes and compresses an image file into a Base64 string.
      * Keeps images under a reasonable size for database storage and network transfer.
      */
-    protected function imageToBase64($file, $maxWidth = 1200, $maxHeight = 1200, $quality = 75)
+    protected function imageToBase64($file, $maxWidth = 800, $maxHeight = 840, $quality = 60)
     {
         $mime = $file->getMimeType();
         $path = $file->getRealPath();

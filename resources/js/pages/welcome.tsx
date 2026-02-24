@@ -347,12 +347,8 @@ export default function Welcome({
               {/* Avatar */}
               <div className="flex-shrink-0">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-200 ring-4 ring-slate-100">
-                  {profile?.avatar_url
-                    ? <img
-                      src={(profile.avatar_url.startsWith('data:')) ? profile.avatar_url : `/storage/${profile.avatar_url}`}
-                      alt={profile.name ?? ''}
-                      className="w-full h-full object-cover"
-                    />
+                  {profile?.avatar_url_full
+                    ? <img src={profile.avatar_url_full} alt={profile.name ?? ''} className="w-full h-full object-cover" />
                     : <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300" />
                   }
                 </div>
