@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 /* ─── Types ─── */
 interface Profile {
   name: string | null; headline: string | null; location: string | null;
-  about: string | null; avatar_url: string | null; email: string | null;
+  about: string | null; avatar_url: string | null; avatar_url_full: string | null; // Added
+  email: string | null;
   schedule_call_url: string | null; blog_url: string | null; company_url: string | null;
 }
 interface Skill { id: number; category: string; name: string }
@@ -347,7 +348,11 @@ export default function Welcome({
               <div className="flex-shrink-0">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-200 ring-4 ring-slate-100">
                   {profile?.avatar_url
-                    ? <img src={`/storage/${profile.avatar_url}`} alt={profile.name ?? ''} className="w-full h-full object-cover" />
+                    ? <img
+                      src={(profile.avatar_url.startsWith('data:')) ? profile.avatar_url : `/storage/${profile.avatar_url}`}
+                      alt={profile.name ?? ''}
+                      className="w-full h-full object-cover"
+                    />
                     : <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300" />
                   }
                 </div>

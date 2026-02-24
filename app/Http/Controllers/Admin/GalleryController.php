@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\PortfolioGallery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\CompressibleBase64;
 use Inertia\Inertia;
 
 class GalleryController extends Controller
 {
+    use CompressibleBase64;
     public function index()
     {
         $gallery = PortfolioGallery::orderBy('sort_order')->get()->map(function ($item) {
@@ -31,7 +33,7 @@ class GalleryController extends Controller
         ]);
 
         $image = $request->file('image');
-        $base64 = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
+        $base64 = $this->imageToBase64($image);
 
         PortfolioGallery::create([
             'image_path' => $base64,

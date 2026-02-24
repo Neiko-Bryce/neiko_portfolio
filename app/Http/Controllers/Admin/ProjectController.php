@@ -9,8 +9,11 @@ use Inertia\Inertia;
 
 use Illuminate\Support\Facades\Storage;
 
+use App\Traits\CompressibleBase64;
+
 class ProjectController extends Controller
 {
+    use CompressibleBase64;
     public function index()
     {
         $projects = PortfolioProject::orderBy('sort_order')->get();
@@ -29,8 +32,7 @@ class ProjectController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $data['image'] = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
+            $data['image'] = $this->imageToBase64($request->file('image'));
         }
 
         PortfolioProject::create($data);
@@ -52,8 +54,7 @@ class ProjectController extends Controller
             if ($project->image && !str_starts_with($project->image, 'data:')) {
                 Storage::disk('public')->delete($project->image);
             }
-            $image = $request->file('image');
-            $data['image'] = 'data:' . $image->getMimeType() . ';base64,' . base64_encode(file_get_contents($image->getRealPath()));
+            $data['image'] = $this->imageToBase64($request->file('image'));
         }
 
         $project->update($data);

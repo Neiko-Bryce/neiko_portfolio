@@ -26,7 +26,9 @@ class PortfolioController extends Controller
         $certifications = PortfolioCertification::orderBy('sort_order')->get();
         $recommendations = PortfolioRecommendation::orderBy('sort_order')->get();
         $gallery = PortfolioGallery::orderBy('sort_order')->get()->map(function ($item) {
-            $item->image_url = Storage::url($item->image_path);
+            $item->image_url = (str_starts_with($item->image_path, 'data:'))
+                ? $item->image_path
+                : Storage::url($item->image_path);
             return $item;
         });
         $memberships = PortfolioMembership::orderBy('sort_order')->get();
