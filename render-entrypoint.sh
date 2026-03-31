@@ -3,27 +3,29 @@ set -e
 
 echo "🚀 Starting Neiko Portfolio deployment..."
 
-# Create .env file from environment variables
-echo "⚙️  Syncing environment variables to .env..."
-echo "APP_NAME=\"$APP_NAME\"" > /var/www/html/.env
-echo "APP_ENV=$APP_ENV" >> /var/www/html/.env
-echo "APP_KEY=$APP_KEY" >> /var/www/html/.env
-echo "APP_DEBUG=$APP_DEBUG" >> /var/www/html/.env
-echo "APP_URL=$APP_URL" >> /var/www/html/.env
-echo "DB_CONNECTION=$DB_CONNECTION" >> /var/www/html/.env
-echo "DB_URL=\"$DB_URL\"" >> /var/www/html/.env
-echo "DATABASE_URL=\"$DATABASE_URL\"" >> /var/www/html/.env
+# Laravel will automatically read environment variables set in Render Dashboard.
+# We ensure an empty .env exists for compatibility.
+touch /var/www/html/.env
 
-# Debug: Check if APP_KEY is present in the environment (print length only for security)
-if [ -z "$APP_KEY" ]; then
-    echo "❌ ERROR: APP_KEY is empty in the environment!"
+# Wait for database connection before running migrations
+echo "⏳ Checking database connection..."
+MAX_RETRIES=5
+COUNT=0
+until php artisan tinker --execute="DB::connection()->getPdo();" > /dev/null 2>&1 || [ $COUNT -eq $MAX_RETRIES ]; do
+    echo "⚠️ Database not ready... retrying ($((COUNT+1))/$MAX_RETRIES)"
+    sleep 3
+    COUNT=$((COUNT+1))
+done
+
+if [ $COUNT -lt $MAX_RETRIES ]; then
+    echo "✅ Database connection successful. Running migrations..."
+    php artisan migrate --force
 else
-    echo "✅ APP_KEY detected (${#APP_KEY} characters) and written to .env."
+    echo "❌ ERROR: Could not connect to database after $MAX_RETRIES attempts."
+    echo "Check your DATABASE_URL and DB_CONNECTION environment variables in Render Dashboard."
+    # We exit here because without DB the app will fail anyway
+    exit 1
 fi
-
-# Run database migrations
-echo "📦 Running database migrations..."
-php artisan migrate --force
 
 # Create storage symlink
 echo "🔗 Creating storage symlink..."
